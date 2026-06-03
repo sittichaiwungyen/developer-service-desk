@@ -158,7 +158,18 @@ class TicketService
 
     protected function generateTicketNumber()
     {
-        return 'T'.time().strtoupper(substr(Str::random(4),0,4));
+        $attempt = 0;
+        do {
+            $attempt++;
+            $ticketNumber = 'T'.time().strtoupper(substr(Str::random(4), 0, 4));
+            $exists = Ticket::where('ticket_number', $ticketNumber)->exists();
+
+            if ($attempt > 10) {
+                throw new \RuntimeException('Unable to generate unique ticket number after multiple attempts');
+            }
+        } while ($exists);
+
+        return $ticketNumber;
     }
 
     protected function recordHistory(Ticket $ticket, ?User $user, string $action, array $changes): void
@@ -167,7 +178,7 @@ class TicketService
             'ticket_id' => $ticket->id,
             'user_id' => $user?->id,
             'action' => $action,
-            'changes' => json_encode($changes, JSON_UNESCAPED_UNICODE),
+            'changes' => $changes,
         ]);
     }
 }
